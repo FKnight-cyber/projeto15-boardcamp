@@ -9,9 +9,9 @@ export default async function gameSchema(req,res,next){
         pricePerDay: joi.number().min(1).required()
     });
 
-    const { error } = gameSchema.validate(req.body);
+    const { error } = gameSchema.validate(req.body,{abortEarly:false});
 
     if(error) return res.status(400).send(error.details.map(detail => detail.message));
-    
+
     next();
 }

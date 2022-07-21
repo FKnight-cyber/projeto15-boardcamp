@@ -3,7 +3,7 @@ import joi from 'joi';
 export default async function categorySchema(req,res,next){
     const categorySchema = joi.object({
         name: joi.string().required()
-    })
+    });
     
     const { error } = categorySchema.validate(req.body);
 
