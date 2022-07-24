@@ -149,7 +149,7 @@ export async function addRental(req,res){
 
 export async function endRent(req,res){
   const { id } = req.params;
-  console.log(id)
+
   if(isNaN(parseInt(id))) return res.status(404).send({message:'Id inválido!'});
   try {
     const { rows:rent } = await connection.query(`
