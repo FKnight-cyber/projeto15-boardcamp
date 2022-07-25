@@ -1,8 +1,20 @@
 import connection from "../dbStrategy/postgres.js";
 
 export async function getRentals(req,res){
-    const { customerId,gameId,offset,limit } = req.query;
+    let { order } = req.query;
+    const { customerId,gameId,offset,limit,desc } = req.query;
     let joinRentalCustomer = [];
+    let config = 'ASC';
+    if(desc){
+        config = 'DESC';
+    }
+    if(order){
+        if(!isNaN(order)){
+            return res.status(409).send({message:'ordenação inválida!'})
+        }
+    }else{
+        order = 'rentalId';
+    }
     try {
         if(customerId){
             const { rows:rentalsByCustomer } = await connection.query(`
@@ -14,7 +26,9 @@ export async function getRentals(req,res){
                 ON r."gameId"=g.id
                 JOIN categories cat
                 ON g."categoryId"=cat.id
-                WHERE r."customerId" = $1 OFFSET $2 LIMIT $3`,[Number(customerId),offset,limit]);
+                WHERE r."customerId" = $1
+                ORDER BY "${order}" ${config} 
+                OFFSET $2 LIMIT $3`,[Number(customerId),offset,limit]);
 
                 joinRentalCustomer = rentalsByCustomer.map((rental)=>({
                     id:rental.rentalId,
@@ -46,7 +60,9 @@ export async function getRentals(req,res){
                 ON r."gameId"=g.id
                 JOIN categories cat
                 ON g."categoryId"=cat.id
-                WHERE r."gameId" = $1 OFFSET $2 LIMIT $3`,[Number(gameId),offset,limit]);
+                WHERE r."gameId" = $1
+                ORDER BY "${order}" ${config} 
+                OFFSET $2 LIMIT $3`,[Number(gameId),offset,limit]);
 
                 const joinRentalGame = rentalsByGame.map((rental)=>({
                     id:rental.rentalId,
@@ -84,7 +100,8 @@ export async function getRentals(req,res){
         JOIN games g
         ON r."gameId"=g.id
         JOIN categories cat
-        ON g."categoryId"=cat.id 
+        ON g."categoryId"=cat.id
+        ORDER BY "${order}" ${config} 
         OFFSET $1 LIMIT $2`,[offset,limit]);
 
         const joinRentals = rentals.map((rental)=>({
@@ -110,6 +127,7 @@ export async function getRentals(req,res){
      
         res.status(200).send(joinRentals);
     } catch (error) {
+        console.log(error)
         res.sendStatus(500);
     }
 }

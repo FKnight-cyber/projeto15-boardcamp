@@ -1,15 +1,28 @@
 import connection from "../dbStrategy/postgres.js";
 
 export async function getCategories(req,res){
-    const { offset,limit } = req.query;
+    let { order } = req.query;
+    const { offset,limit,desc } = req.query;
+    let config = 'ASC';
+    if(desc){
+        config = 'DESC';
+    }
+    if(order){
+        if(!isNaN(order)){
+            return res.status(409).send({message:'ordenação inválida!'})
+        }
+    }else{
+        order= 'id';
+    }
     try {
         const {rows: categories} = await connection.query(
-            'SELECT * FROM categories OFFSET $1 LIMIT $2',
+            `SELECT * FROM categories 
+            ORDER BY ${order} ${config} 
+            OFFSET $1 LIMIT $2 `,
             [offset,limit]);
 
         res.status(200).send(categories);
     } catch (error) {
-        console.log(error)
         res.sendStatus(500);
     }
 }

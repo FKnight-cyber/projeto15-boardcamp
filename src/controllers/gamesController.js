@@ -26,8 +26,19 @@ export async function addGame(req,res){
 }
 
 export async function getGames(req,res){
-    let { name } = req.query;
-    const { offset,limit } = req.query;
+    let { name,order } = req.query;
+    const { offset,limit,desc } = req.query;
+    let config = 'ASC';
+    if(desc){
+        config = 'DESC';
+    }
+    if(order){
+        if(!isNaN(order)){
+            return res.status(409).send({message:'ordenação inválida!'})
+        }
+    }else{
+        order = 'id';
+    }
     try {   
         if(name){
             if(!isNaN(name)) return res.status(409).send({message:'Nome inválido!'})
@@ -36,6 +47,7 @@ export async function getGames(req,res){
                 JOIN categories c
                 ON c.id = g."categoryId" 
                 WHERE g.name ILIKE '%${name}%'
+                ORDER BY ${order} ${config}
                 OFFSET $1 LIMIT $2
                 `,[offset,limit]);
             return res.status(200).send(games);
@@ -45,6 +57,7 @@ export async function getGames(req,res){
             `SELECT g.*,c.name as "categoryName" FROM games g
             JOIN categories c
             ON c.id = g."categoryId"
+            ORDER BY ${order} ${config}
             OFFSET $1 LIMIT $2`
             ,[offset,limit]);
 

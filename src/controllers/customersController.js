@@ -1,8 +1,19 @@
 import connection from "../dbStrategy/postgres.js";
 
 export async function getCustomers(req,res){
-    let { cpf } = req.query;
-    const { offset,limit } = req.query;
+    let { cpf,order } = req.query;
+    const { offset,limit,desc } = req.query;
+    let config = 'ASC';
+    if(desc){
+        config = 'DESC'
+    }
+    if(order){
+        if(!isNaN(order)){
+            return res.status(409).send({message:'ordenação inválida!'})
+        }
+    }else{
+        order = 'id';
+    }
     try {
 
         if(cpf){
@@ -11,12 +22,15 @@ export async function getCustomers(req,res){
             }
             const { rows:customers } = await connection.query(
                 `SELECT * FROM customers 
-                WHERE cpf LIKE '%${cpf}%' OFFSET $1 LIMIT $2`,[offset,limit]);
+                WHERE cpf LIKE '%${cpf}%'
+                ORDER BY ${order} ${config} 
+                OFFSET $1 LIMIT $2`,[offset,limit]);
             return res.status(200).send(customers);
         }
 
         const { rows:customers } = await connection.query(`
         SELECT * FROM customers
+        ORDER BY ${order} ${config}
         OFFSET $1 LIMIT $2`,[offset,limit]);
 
         res.status(200).send(customers);
