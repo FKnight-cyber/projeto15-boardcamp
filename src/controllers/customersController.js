@@ -2,17 +2,23 @@ import connection from "../dbStrategy/postgres.js";
 
 export async function getCustomers(req,res){
     let { cpf } = req.query;
+    const { offset,limit } = req.query;
     try {
+
         if(cpf){
             if(/[a-zA-Z]/.test(cpf)){
                 return res.status(409).send({message:'cpf inválido!'})
             }
             const { rows:customers } = await connection.query(
                 `SELECT * FROM customers 
-                WHERE cpf LIKE '%${cpf}%'`);
+                WHERE cpf LIKE '%${cpf}%' OFFSET $1 LIMIT $2`,[offset,limit]);
             return res.status(200).send(customers);
         }
-        const { rows:customers } = await connection.query(`SELECT * FROM customers`);
+
+        const { rows:customers } = await connection.query(`
+        SELECT * FROM customers
+        OFFSET $1 LIMIT $2`,[offset,limit]);
+
         res.status(200).send(customers);
     } catch (error) {
         res.sendStatus(500);
@@ -60,7 +66,7 @@ export async function updateCustomer(req,res){
         await connection.query(`
         UPDATE customers 
         SET name=$1,cpf=$2,phone=$3,birthday=$4
-        WHERE customers.id=$5`,[name,cpf,phone,birthday,id]);
+        WHERE id=$5`,[name,cpf,phone,birthday,id]);
 
         res.status(200).send('OK');
     } catch (error) {

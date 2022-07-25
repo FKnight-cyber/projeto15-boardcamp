@@ -1,12 +1,12 @@
 import connection from "../dbStrategy/postgres.js";
 
 export async function getRentals(req,res){
-    const { customerId,gameId } = req.query;
+    const { customerId,gameId,offset,limit } = req.query;
     let joinRentalCustomer = [];
     try {
         if(customerId){
             const { rows:rentalsByCustomer } = await connection.query(`
-                SELECT r.*,c.id,c.name as "customerName",g.id,g.name,g."categoryId",cat.name as "categoryName"
+                SELECT r.*,r.id as "rentalId",c.id,c.name as "customerName",g.id,g.name,g."categoryId",cat.name as "categoryName"
                 FROM rentals r
                 JOIN customers c
                 ON r."customerId"=c.id
@@ -14,10 +14,10 @@ export async function getRentals(req,res){
                 ON r."gameId"=g.id
                 JOIN categories cat
                 ON g."categoryId"=cat.id
-                WHERE r."customerId" = $1`,[Number(customerId)]);
+                WHERE r."customerId" = $1 OFFSET $2 LIMIT $3`,[Number(customerId),offset,limit]);
 
                 joinRentalCustomer = rentalsByCustomer.map((rental)=>({
-                    id:rental.id,
+                    id:rental.rentalId,
                     customerId:rental.customerId,
                     gameId:rental.gameId,
                     rentDate:rental.rentDate,
@@ -38,7 +38,7 @@ export async function getRentals(req,res){
                   }));
         }else if(gameId){
             const { rows:rentalsByGame } = await connection.query(`
-                SELECT r.*,c.id,c.name as "customerName",g.id,g.name,g."categoryId",cat.name as "categoryName"
+                SELECT r.*,r.id as "rentalId",c.id,c.name as "customerName",g.id,g.name,g."categoryId",cat.name as "categoryName"
                 FROM rentals r
                 JOIN customers c
                 ON r."customerId"=c.id
@@ -46,10 +46,10 @@ export async function getRentals(req,res){
                 ON r."gameId"=g.id
                 JOIN categories cat
                 ON g."categoryId"=cat.id
-                WHERE r."gameId" = $1`,[Number(gameId)]);
+                WHERE r."gameId" = $1 OFFSET $2 LIMIT $3`,[Number(gameId),offset,limit]);
 
                 const joinRentalGame = rentalsByGame.map((rental)=>({
-                    id:rental.id,
+                    id:rental.rentalId,
                     customerId:rental.customerId,
                     gameId:rental.gameId,
                     rentDate:rental.rentDate,
@@ -77,17 +77,18 @@ export async function getRentals(req,res){
         if(customerId) return res.status(200).send(joinRentalCustomer);
     
         const { rows:rentals } = await connection.query(`
-        SELECT r.*,c.id,c.name as "customerName",g.id,g.name,g."categoryId",cat.name as "categoryName"
+        SELECT r.*,r.id as "rentalId",c.id,c.name as "customerName",g.id,g.name,g."categoryId",cat.name as "categoryName"
         FROM rentals r
         JOIN customers c
         ON r."customerId"=c.id
         JOIN games g
         ON r."gameId"=g.id
         JOIN categories cat
-        ON g."categoryId"=cat.id`);
+        ON g."categoryId"=cat.id 
+        OFFSET $1 LIMIT $2`,[offset,limit]);
 
         const joinRentals = rentals.map((rental)=>({
-            id:rental.id,
+            id:rental.rentalId,
             customerId:rental.customerId,
             gameId:rental.gameId,
             rentDate:rental.rentDate,
@@ -106,7 +107,7 @@ export async function getRentals(req,res){
               categoryName: rental.categoryName
             }
           }));
-
+     
         res.status(200).send(joinRentals);
     } catch (error) {
         res.sendStatus(500);
@@ -166,7 +167,7 @@ export async function endRent(req,res){
       SELECT g."pricePerDay" FROM games g
       WHERE id = $1`,[rent[0].gameId]);
 
-      delayFee = game[0].pricePerDay * (rentedDays - rent[0].daysRented) * 100;
+      delayFee = game[0].pricePerDay * (rentedDays - rent[0].daysRented);
     }
 
     const todayDate = new Date().toISOString();

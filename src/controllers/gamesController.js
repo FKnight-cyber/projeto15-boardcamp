@@ -27,6 +27,7 @@ export async function addGame(req,res){
 
 export async function getGames(req,res){
     let { name } = req.query;
+    const { offset,limit } = req.query;
     try {   
         if(name){
             if(!isNaN(name)) return res.status(409).send({message:'Nome inválido!'})
@@ -35,14 +36,18 @@ export async function getGames(req,res){
                 JOIN categories c
                 ON c.id = g."categoryId" 
                 WHERE g.name ILIKE '%${name}%'
-                `);
+                OFFSET $1 LIMIT $2
+                `,[offset,limit]);
             return res.status(200).send(games);
         }
+
         const { rows:games } = await connection.query(
             `SELECT g.*,c.name as "categoryName" FROM games g
             JOIN categories c
-            ON c.id = g."categoryId"`
-            );
+            ON c.id = g."categoryId"
+            OFFSET $1 LIMIT $2`
+            ,[offset,limit]);
+
         res.status(200).send(games);
     } catch (error) {
         console.log(error)
