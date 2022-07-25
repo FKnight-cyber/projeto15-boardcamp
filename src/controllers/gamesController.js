@@ -47,7 +47,7 @@ export async function getGames(req,res){
                 JOIN categories c
                 ON c.id = g."categoryId" 
                 WHERE g.name ILIKE '%${name}%'
-                ORDER BY ${order} ${config}
+                ORDER BY ${order.split(';')} ${config}
                 OFFSET $1 LIMIT $2
                 `,[offset,limit]);
             return res.status(200).send(games);

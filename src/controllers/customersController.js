@@ -23,14 +23,14 @@ export async function getCustomers(req,res){
             const { rows:customers } = await connection.query(
                 `SELECT * FROM customers 
                 WHERE cpf LIKE '%${cpf}%'
-                ORDER BY ${order} ${config} 
+                ORDER BY ${order.split(';')} ${config} 
                 OFFSET $1 LIMIT $2`,[offset,limit]);
             return res.status(200).send(customers);
         }
 
         const { rows:customers } = await connection.query(`
         SELECT * FROM customers
-        ORDER BY ${order} ${config}
+        ORDER BY ${order.split(';')} ${config}
         OFFSET $1 LIMIT $2`,[offset,limit]);
 
         res.status(200).send(customers);

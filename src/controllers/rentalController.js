@@ -2,19 +2,26 @@ import connection from "../dbStrategy/postgres.js";
 
 export async function getRentals(req,res){
     let { order } = req.query;
-    const { customerId,gameId,offset,limit,desc } = req.query;
+    const { customerId,gameId,offset,limit,desc,status } = req.query;
     let joinRentalCustomer = [];
+    let ordernation = '';
     let config = 'ASC';
     if(desc){
         config = 'DESC';
     }
     if(order){
         if(!isNaN(order)){
-            return res.status(409).send({message:'ordenação inválida!'})
+            return res.status(409).send({message:'ordenação inválida!'});
         }
     }else{
         order = 'rentalId';
     }
+    if(status === 'closed'){
+      ordernation = 'WHERE r."returnDate" IS NOT NULL';
+    }
+    if(status === 'open'){
+      ordernation = 'WHERE r."returnDate" IS NULL';
+    } 
     try {
         if(customerId){
             const { rows:rentalsByCustomer } = await connection.query(`
@@ -27,7 +34,8 @@ export async function getRentals(req,res){
                 JOIN categories cat
                 ON g."categoryId"=cat.id
                 WHERE r."customerId" = $1
-                ORDER BY "${order}" ${config} 
+                ${ordernation}
+                ORDER BY "${order.split(';')}" ${config} 
                 OFFSET $2 LIMIT $3`,[Number(customerId),offset,limit]);
 
                 joinRentalCustomer = rentalsByCustomer.map((rental)=>({
@@ -61,7 +69,8 @@ export async function getRentals(req,res){
                 JOIN categories cat
                 ON g."categoryId"=cat.id
                 WHERE r."gameId" = $1
-                ORDER BY "${order}" ${config} 
+                ${ordernation}
+                ORDER BY "${order.split(';')}" ${config} 
                 OFFSET $2 LIMIT $3`,[Number(gameId),offset,limit]);
 
                 const joinRentalGame = rentalsByGame.map((rental)=>({
@@ -101,7 +110,8 @@ export async function getRentals(req,res){
         ON r."gameId"=g.id
         JOIN categories cat
         ON g."categoryId"=cat.id
-        ORDER BY "${order}" ${config} 
+        ${ordernation}
+        ORDER BY "${order.split(';')}" ${config} 
         OFFSET $1 LIMIT $2`,[offset,limit]);
 
         const joinRentals = rentals.map((rental)=>({
@@ -127,7 +137,6 @@ export async function getRentals(req,res){
      
         res.status(200).send(joinRentals);
     } catch (error) {
-        console.log(error)
         res.sendStatus(500);
     }
 }

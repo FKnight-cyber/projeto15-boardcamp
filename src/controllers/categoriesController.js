@@ -17,7 +17,7 @@ export async function getCategories(req,res){
     try {
         const {rows: categories} = await connection.query(
             `SELECT * FROM categories 
-            ORDER BY ${order} ${config} 
+            ORDER BY ${order.split(';')} ${config} 
             OFFSET $1 LIMIT $2 `,
             [offset,limit]);
 
