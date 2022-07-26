@@ -77,6 +77,12 @@ export async function updateCustomer(req,res){
     const { name,cpf,phone,birthday } = req.body;
 
     try {
+        const { rows:checkCPF } = await connection.query(`
+        SELECT * FROM customers WHERE cpf=$1
+        AND id <> $2`,[cpf,id]);
+
+        if(checkCPF.length > 0) return res.sendStatus(409);
+
         await connection.query(`
         UPDATE customers 
         SET name=$1,cpf=$2,phone=$3,birthday=$4
